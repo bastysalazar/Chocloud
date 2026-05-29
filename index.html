@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes bounce { from { opacity: 0.3; transform: translateY(0); } to { opacity: 1; transform: translateY(-4px); } }
         .animate-spin { animation: spin 1s linear infinite; }
         /* chat styles moved to inline */
         .cc-toast { transition: all 0.3s ease; transform: translateY(100px); opacity: 0; }
@@ -75,8 +76,8 @@
                         <h1 class="text-4xl md:text-5xl font-black mb-6 leading-tight">Tu receta magistral,<br><span class="text-blue-400">sin filas ni esperas</span></h1>
                         <p class="text-slate-400 text-base md:text-lg mb-8 max-w-xl">Compara precios en farmacias y laboratorios del país, revisa calificaciones reales de usuarios y resuelve tus dudas con <span class="text-blue-400 font-bold">Recetina</span>, nuestra IA especializada.</p>
                         <div class="flex flex-wrap gap-3">
-                            <button onclick="navigate('search')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-3 rounded-xl text-sm transition shadow-lg">🔍 Buscar mi compuesto</button>
-                            <button onclick="navigate('upload')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white font-semibold px-5 py-3 rounded-xl text-sm transition">📋 Subir mi receta</button>
+
+
                         </div>
                     </div>
                     <div class="lg:col-span-5 bg-slate-900/60 backdrop-blur border border-slate-800 p-6 rounded-2xl text-left shadow-2xl">
@@ -940,7 +941,41 @@ FAQ: No necesitas cuenta para buscar, solo para pedir. Las recetas son confidenc
 
 Da consejos útiles y concretos. Si preguntan por salud o medicina, recomienda consultar médico o farmacéutico. Respuestas cortas y directas.`;
 
-        async function sendChatMessage() {
+        // Respuestas predefinidas de Recetina
+        const RESPUESTAS = {
+            "pedido": "**¿Cómo hacer un pedido en ChoCloud?**\n\n1. Busca tu compuesto en la sección **Buscar Compuesto** o sube tu receta en **Subir Receta**\n2. Compara las opciones disponibles según precio y tiempo de entrega\n3. Haz clic en **Ver detalle y solicitar** en el establecimiento que prefieras\n4. El establecimiento te contactará en menos de 24 hrs para confirmar y coordinar el pago\n5. ¡Listo! Recibirás tu número de pedido por correo para hacer seguimiento",
+
+            "precio": "**¿Cómo comparar precios en ChoCloud?**\n\nEn nuestra red encontrarás:\n- **Dr. Simi** — desde $7.500 (más económico)\n- **Farmacias Ahumada** — desde $8.900\n- **Farmacia Fracción** — desde $9.200\n- **Salcobrand** — desde $9.800 (mejor calificado)\n- **Cruz Verde** — desde $10.200\n- **Maver** — desde $10.800\n- **Andrómaco** — desde $11.900\n- **Lab. Chile** — desde $12.500\n- **SAVAL** — desde $13.800\n- **Bayer Chile** — desde $17.200\n- **Abbott Chile** — desde $18.500\n\nUsa los filtros para ordenar por precio o calificación.",
+
+            "seguimiento": "**¿Cómo hacer seguimiento de tu pedido?**\n\n1. Ve a la sección **Seguimiento** en el menú superior\n2. Ingresa tu número de pedido (lo encuentras en el correo de confirmación, ej: CC-2024-001)\n3. Podrás ver en qué etapa está tu preparado:\n   - ✅ Recibido\n   - 🔍 Verificado\n   - ⚗️ En preparación\n   - 🧪 Control de calidad\n   - 📦 Listo para entrega\n\nPuedes intentarlo ahora con los números de prueba: **CC-2024-001**, **CC-2024-042** o **CC-2024-099**",
+
+            "pago": "**Métodos de pago en ChoCloud**\n\nEl pago se coordina directamente con cada establecimiento al momento de confirmar tu pedido. Los métodos disponibles dependen de cada farmacia o laboratorio, pero generalmente aceptan:\n- Transferencia bancaria\n- Tarjeta de débito o crédito\n- Efectivo (en retiros presenciales)\n\nRecibirás los detalles de pago en el correo de confirmación del establecimiento.",
+
+            "receta": "**¿Cómo subir tu receta?**\n\n1. Ve a la sección **Subir Receta** en el menú superior\n2. Arrastra tu archivo o haz clic para seleccionarlo\n3. Formatos aceptados: **PDF, PNG, JPG** — máximo 10 MB\n4. Nuestra IA analiza la receta y muestra los establecimientos disponibles con precios\n5. También puedes subir tu receta desde el widget en la página de inicio\n\n💡 Si tienes dudas sobre si tu receta es válida, consúltalo con tu médico o farmacéutico.",
+
+            "tiempo": "**Tiempos de preparación**\n\nDepende del tipo de establecimiento:\n\n**Farmacias** (más rápidas):\n- Cruz Verde, Salcobrand, Ahumada, Dr. Simi, Farmacia Fracción: **24 a 72 horas**\n\n**Laboratorios** (más especializados):\n- Lab. Chile, Andrómaco, Maver, SAVAL, Abbott, Bayer: **2 a 7 días hábiles**\n\nSi necesitas tu preparado urgente, elige una farmacia. Si buscas mayor especialización, opta por un laboratorio.",
+
+            "entrega": "**Opciones de entrega**\n\nCada establecimiento ofrece dos modalidades:\n\n📦 **Despacho a domicilio** — El preparado llega a tu dirección. Coordinado directamente con el establecimiento al confirmar el pedido.\n\n🏪 **Retiro en sucursal** — Puedes retirar en la farmacia o laboratorio una vez que te notifiquen que está listo.\n\nRecibirás un mensaje de confirmación cuando tu pedido esté disponible.",
+
+            "registro": "**¿Necesito una cuenta para usar ChoCloud?**\n\n- Para **buscar y comparar** precios: no necesitas cuenta\n- Para **subir tu receta** y hacer pedidos: se recomienda crear una cuenta\n- Para **seguimiento** de pedido: solo necesitas tu número de pedido\n\nRegistrarte es gratis y te permite recibir notificaciones por correo y guardar tu historial de pedidos.",
+
+            "default": "¡Hola! Soy **Recetina** 💊, tu asistente de ChoCloud.\n\nPuedo ayudarte con:\n- ¿Cómo hacer un pedido?\n- Comparar precios entre establecimientos\n- Seguimiento de tu pedido\n- Tiempos de preparación\n- Cómo subir tu receta\n- Métodos de pago y entrega\n\nEscribe tu consulta o usa los botones de sugerencias 👇"
+        };
+
+        function buscarRespuesta(texto) {
+            const t = texto.toLowerCase();
+            if (t.includes('pedido') || t.includes('comprar') || t.includes('solicitar') || t.includes('pedir')) return RESPUESTAS.pedido;
+            if (t.includes('precio') || t.includes('costo') || t.includes('cuánto') || t.includes('cuanto') || t.includes('comparar') || t.includes('barato') || t.includes('económico')) return RESPUESTAS.precio;
+            if (t.includes('seguimiento') || t.includes('estado') || t.includes('rastrear') || t.includes('dónde está') || t.includes('donde esta')) return RESPUESTAS.seguimiento;
+            if (t.includes('pago') || t.includes('pagar') || t.includes('transferencia') || t.includes('tarjeta')) return RESPUESTAS.pago;
+            if (t.includes('receta') || t.includes('subir') || t.includes('upload') || t.includes('archivo')) return RESPUESTAS.receta;
+            if (t.includes('tiempo') || t.includes('demora') || t.includes('cuánto tarda') || t.includes('tarda') || t.includes('días') || t.includes('horas')) return RESPUESTAS.tiempo;
+            if (t.includes('entrega') || t.includes('despacho') || t.includes('domicilio') || t.includes('retiro') || t.includes('sucursal')) return RESPUESTAS.entrega;
+            if (t.includes('cuenta') || t.includes('registro') || t.includes('registrar') || t.includes('ingresar') || t.includes('login')) return RESPUESTAS.registro;
+            return null;
+        }
+
+        function sendChatMessage() {
             const input = document.getElementById('chatInput');
             const query = input.value.trim();
             if (!query) return;
@@ -948,60 +983,28 @@ Da consejos útiles y concretos. Si preguntan por salud o medicina, recomienda c
             appendChatMessage("user", query);
             input.value = "";
             input.disabled = true;
-            document.getElementById('chatInput').disabled = true;
-            const sendBtn = document.querySelector('#chatWindow button[onclick="sendChatMessage()"]');
+            const sendBtn = document.getElementById('chatSendBtn');
             if (sendBtn) sendBtn.disabled = true;
 
+            // Mostrar indicador de escritura
             const msgsBox = document.getElementById('chatMessages');
-            const loadingBubble = document.createElement('div');
-            loadingBubble.className = "bg-white border border-slate-200 text-slate-400 p-3 rounded-2xl rounded-tl-none max-w-[70%] shadow-sm flex items-center gap-1.5";
-            loadingBubble.innerHTML = '<span class="text-sm">💊</span><span class="w-2 h-2 rounded-full bg-blue-400 animate-bounce"></span><span class="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style="animation-delay:0.15s"></span><span class="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style="animation-delay:0.3s"></span>';
-            msgsBox.appendChild(loadingBubble);
+            const loading = document.createElement('div');
+            loading.id = "chatLoading";
+            loading.style.cssText = "background:white;border:1px solid #e2e8f0;color:#94a3b8;padding:12px 14px;border-radius:16px 16px 16px 4px;max-width:80%;display:flex;align-items:center;gap:6px;font-size:14px";
+            loading.innerHTML = '<span style="font-size:16px">💊</span><span style="animation:bounce 0.6s infinite alternate">·</span><span style="animation:bounce 0.6s 0.2s infinite alternate">·</span><span style="animation:bounce 0.6s 0.4s infinite alternate">·</span>';
+            msgsBox.appendChild(loading);
             msgsBox.scrollTop = msgsBox.scrollHeight;
 
-            chatHistory.push({ role: "user", content: query });
-
-            try {
-                const response = await fetch("https://api.anthropic.com/v1/messages", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "anthropic-dangerous-direct-browser-access": "true"
-                    },
-                    body: JSON.stringify({
-                        model: "claude-sonnet-4-20250514",
-                        max_tokens: 1024,
-                        system: RECETINA_SYSTEM,
-                        messages: chatHistory
-                    })
-                });
-
-                const data = await response.json();
-                loadingBubble.remove();
-
-                if (!response.ok) {
-                    const errMsg = data?.error?.message || "Error desconocido";
-                    chatHistory.pop();
-                    appendChatMessage("ai", "Error al conectarme: " + errMsg);
-                    return;
-                }
-
-                const answer = data.content?.[0]?.text || "No pude generar una respuesta. Inténtalo de nuevo.";
-                chatHistory.push({ role: "assistant", content: answer });
-                appendChatMessage("ai", answer);
-
-            } catch (err) {
-                loadingBubble.remove();
-                chatHistory.pop();
-                appendChatMessage("ai", "Error de conexión: " + err.message);
-            } finally {
+            setTimeout(function() {
+                loading.remove();
+                const respuesta = buscarRespuesta(query) || RESPUESTAS.default;
+                appendChatMessage("ai", respuesta);
                 input.disabled = false;
-                document.getElementById('chatInput').disabled = false;
-                const sendBtnR = document.querySelector('#chatWindow button[onclick="sendChatMessage()"]');
-                if (sendBtnR) sendBtnR.disabled = false;
+                if (sendBtn) sendBtn.disabled = false;
                 input.focus();
-            }
+            }, 700);
         }
+
 
         function formatChatText(text) {
             let html = text
