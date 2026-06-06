@@ -472,6 +472,42 @@
             {id:11, tipo:"laboratorio", nombre:"Bayer Chile", icono:"⚪", sub:"Laboratorio farmacéutico — Bayer", location:"Santiago — Vitacura", time:"5-7 días", price:"$17.200", priceNum:17200, rating:4.7, reviews:743, desc:"Bayer es un referente global en farmacéutica. Sus preparados magistrales especiales son solicitados por especialistas médicos que requieren la máxima precisión en formulación.", compounds:["Progesterona","Espironolactona","Finasteride","Vitamina D"], tags:["ltag-blue|Estándar global","ltag-green|ISP Certificado"], recommended:false, userReviews:[{name:"Dr. Sebastián A.",rating:5,text:"Cuando necesito lo mejor para mis pacientes, elijo Bayer."},{name:"Camila E.",rating:5,text:"Preparados perfectos, sin variaciones de dosis. Altamente recomendado."}]}
         ];
 
+        // Coordenadas de comunas del Gran Santiago para geolocalización
+        const COMUNAS_GEO = [
+            { nombre: "Santiago Centro",  lat: -33.4489, lng: -70.6693 },
+            { nombre: "Providencia",      lat: -33.4323, lng: -70.6099 },
+            { nombre: "Las Condes",       lat: -33.4172, lng: -70.5781 },
+            { nombre: "Vitacura",         lat: -33.3922, lng: -70.5794 },
+            { nombre: "Ñuñoa",            lat: -33.4542, lng: -70.5997 },
+            { nombre: "La Florida",       lat: -33.5169, lng: -70.5985 },
+            { nombre: "Maipú",            lat: -33.5094, lng: -70.7583 },
+            { nombre: "Pudahuel",         lat: -33.4403, lng: -70.7645 },
+            { nombre: "Macul",            lat: -33.4939, lng: -70.6069 },
+            { nombre: "La Pintana",       lat: -33.5825, lng: -70.6292 },
+            { nombre: "Puente Alto",      lat: -33.6108, lng: -70.5759 },
+            { nombre: "San Bernardo",     lat: -33.5928, lng: -70.7197 },
+            { nombre: "Peñalolén",        lat: -33.4864, lng: -70.5436 },
+            { nombre: "La Reina",         lat: -33.4494, lng: -70.5344 },
+            { nombre: "Lo Barnechea",     lat: -33.3536, lng: -70.5167 },
+            { nombre: "Cerrillos",        lat: -33.4922, lng: -70.7197 },
+            { nombre: "Quinta Normal",    lat: -33.4428, lng: -70.7031 },
+            { nombre: "Renca",            lat: -33.4003, lng: -70.7311 },
+            { nombre: "Conchalí",         lat: -33.3900, lng: -70.6789 },
+            { nombre: "Recoleta",         lat: -33.4039, lng: -70.6453 },
+            { nombre: "Independencia",    lat: -33.4186, lng: -70.6603 },
+            { nombre: "Estación Central", lat: -33.4614, lng: -70.7014 },
+            { nombre: "Cerro Navia",      lat: -33.4261, lng: -70.7378 },
+            { nombre: "Lo Espejo",        lat: -33.5214, lng: -70.6958 },
+            { nombre: "San Ramón",        lat: -33.5392, lng: -70.6403 },
+            { nombre: "El Bosque",        lat: -33.5656, lng: -70.6631 },
+            { nombre: "La Granja",        lat: -33.5339, lng: -70.6183 },
+            { nombre: "Lo Prado",         lat: -33.4461, lng: -70.7269 },
+            { nombre: "Huechuraba",       lat: -33.3656, lng: -70.6525 },
+            { nombre: "Quilicura",        lat: -33.3564, lng: -70.7386 },
+            { nombre: "San Joaquín",      lat: -33.4956, lng: -70.6392 },
+            { nombre: "Pedro Aguirre Cerda", lat: -33.5047, lng: -70.6819 }
+        ];
+
         let activeTab = "home";
         let labsTypeFilter = "all";
         let currentAuthTab = "login";
@@ -511,6 +547,14 @@
                 "La Granja","Lo Prado","Huechuraba","Quilicura","San Joaquín","Pedro Aguirre Cerda"
             ];
             const container = document.getElementById('locationDropdown');
+
+            // Botón de geolocalización al inicio del dropdown
+            const geoBtn = document.createElement('button');
+            geoBtn.className = "w-full text-left px-4 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 flex items-center gap-2 border-b border-slate-100 transition";
+            geoBtn.innerHTML = '📍 Usar mi ubicación actual';
+            geoBtn.onclick = detectarUbicacion;
+            container.appendChild(geoBtn);
+
             list.forEach(reg => {
                 const btn = document.createElement('button');
                 btn.className = "w-full text-left px-4 py-2 text-xs hover:bg-slate-50 text-slate-700 font-medium block";
@@ -525,6 +569,48 @@
 
         function toggleDropdown(id) {
             document.getElementById(id).classList.toggle('hidden');
+        }
+
+        // Geolocalización: detecta la comuna más cercana del Gran Santiago
+        function detectarUbicacion() {
+            document.getElementById('locationDropdown').classList.add('hidden');
+            const locSpan = document.getElementById('currentLocation');
+            const prevText = locSpan.innerText;
+            locSpan.innerText = 'Detectando...';
+
+            if (!navigator.geolocation) {
+                locSpan.innerText = prevText;
+                showToast('Tu navegador no soporta geolocalización.');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    let minDist = Infinity;
+                    let comunaMasCercana = 'Santiago Centro';
+
+                    COMUNAS_GEO.forEach(function(c) {
+                        const dlat = c.lat - lat;
+                        const dlng = c.lng - lng;
+                        const dist = Math.sqrt(dlat * dlat + dlng * dlng);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            comunaMasCercana = c.nombre;
+                        }
+                    });
+
+                    locSpan.innerText = comunaMasCercana;
+                    showToast('📍 Ubicación detectada: ' + comunaMasCercana);
+                },
+                function(err) {
+                    locSpan.innerText = prevText;
+                    const msgs = { 1: 'Permiso de ubicación denegado.', 2: 'No se pudo obtener la ubicación.', 3: 'Tiempo de espera agotado.' };
+                    showToast(msgs[err.code] || 'Error al obtener ubicación.');
+                },
+                { timeout: 8000, maximumAge: 60000 }
+            );
         }
 
         // Render popular items (8 Pills)
