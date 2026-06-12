@@ -160,24 +160,6 @@
             </div>
         </div>
 
-        <div id="analysisResultSection" class="max-w-5xl mx-auto px-4 pt-8 hidden animate-fade">
-            <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 mb-6 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <span class="text-xl">🔬</span>
-                    <div>
-                        <h4 class="text-sm font-bold text-slate-900">¡Laboratorios encontrados para tu receta!</h4>
-                        <p class="text-xs text-slate-500">Hemos filtrado los establecimientos certificados disponibles para este compuesto.</p>
-                    </div>
-                </div>
-                <button onclick="resetUpload()" class="text-xs text-slate-400 hover:text-sky-600 font-bold underline">Limpiar filtros</button>
-            </div>
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-base font-black text-slate-900 flex items-center gap-2">📍 Establecimientos disponibles cerca de ti</h3>
-                <button onclick="abrirComparadorDesdeHome()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow transition">Ver Comparador Avanzado</button>
-            </div>
-            <div id="matchedLabsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"></div>
-        </div>
-
         <div class="max-w-5xl mx-auto px-4 py-8">
             <div class="flex justify-between items-end mb-4">
                 <div>
@@ -951,15 +933,6 @@
     </div>
 </div>
 
-<!-- MODAL COMPARADOR -->
-<div id="comparadorModal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex justify-center items-center p-4 z-[99]">
-    <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-y-auto p-6 shadow-2xl relative">
-        <button onclick="document.getElementById('comparadorModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-sm font-bold">✕ Cerrar</button>
-        <h3 class="text-base font-black text-slate-900 mb-4">📊 Matriz Comparativa de Propuestas</h3>
-        <div id="comparadorContent"></div>
-    </div>
-</div>
-
 <!-- MODAL DETALLE COMPUESTO -->
 <div id="detalleModal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex justify-center items-center p-4 z-[99]">
     <div class="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl relative animate-fade">
@@ -1152,7 +1125,6 @@
     }
 
     let heroIdx = 0;
-    let globalActiveCompound = "";
     let leafletMap = null;
     let markersGroup = null;
 
@@ -1467,78 +1439,6 @@
             iniciarOCR(file.name, file);
             showToast("Receta cargada, continuemos el trámite aquí", "📋");
         }, 800);
-    }
-
-    function detectCompoundFromName(nameLower) {
-        for (const c of COMPOUNDS) {
-            for (const kw of c.keywords) {
-                if (nameLower.includes(kw)) return c.name.split(' ').slice(0, 2).join(' ');
-            }
-        }
-        // Aleatorio si no hay match (demo)
-        return COMPOUNDS[Math.floor(Math.random() * COMPOUNDS.length)].name.split(' ').slice(0, 2).join(' ');
-    }
-
-    function renderMatchedLabs(compound) {
-        const container = document.getElementById('matchedLabsContainer');
-        const section = document.getElementById('analysisResultSection');
-
-        const keyword = compound.split(' ')[0].toLowerCase();
-        const filtered = LABS.filter(lab =>
-            lab.compounds.some(c => c.toLowerCase().includes(keyword))
-        );
-        const display = filtered.length > 0 ? filtered : LABS;
-
-        container.innerHTML = display.map(lab =>
-            '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition lab-card">' +
-            '<div class="flex justify-between items-start mb-1.5">' +
-            '<span class="text-[10px] bg-slate-100 text-slate-700 font-bold uppercase tracking-wider px-2 py-0.5 rounded-md">' + lab.tipo + '</span>' +
-            '<span class="text-xs font-mono font-black text-sky-600">' + lab.price + '</span>' +
-            '</div>' +
-            '<h4 class="font-bold text-sm text-slate-900 mb-0.5">' + lab.name + '</h4>' +
-            '<p class="text-[10px] text-slate-400 mb-1">' + lab.especialidad + '</p>' +
-            '<p class="text-[11px] text-slate-500">⏱ ' + lab.time + ' | 📍 ' + lab.locationShort + '</p>' +
-            '<div class="mt-3 pt-2.5 border-t border-slate-100 flex justify-between items-center text-xs">' +
-            '<span class="text-amber-500 font-bold">⭐ ' + lab.rating + ' <span class="text-slate-400 font-normal">(' + lab.reviews + ')</span></span>' +
-            '<button onclick="showToast(\'Solicitud enviada a ' + lab.name.replace(/'/g, "\\'") + '\', \'✓\')" class="bg-slate-900 text-white font-extrabold text-[10px] px-3 py-1.5 rounded-lg hover:bg-slate-800 transition">Solicitar preparado</button>' +
-            '</div>' +
-            '</div>'
-        ).join('');
-        section.classList.remove('hidden');
-        section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    function resetUpload() {
-        document.getElementById('analysisResultSection').classList.add('hidden');
-        const statusEl = document.getElementById('ocrStatusValue');
-        statusEl.innerText = "Ningún archivo cargado todavía";
-        statusEl.className = "text-xs font-mono font-medium text-slate-400";
-        document.getElementById('homeFileInput').value = "";
-        globalActiveCompound = "";
-    }
-
-    function abrirComparadorDesdeHome() {
-        if (!globalActiveCompound) return;
-        const keyword = globalActiveCompound.split(' ')[0].toLowerCase();
-        const filtered = LABS.filter(lab =>
-            lab.compounds.some(c => c.toLowerCase().includes(keyword))
-        );
-        const display = filtered.length > 0 ? filtered : LABS;
-        const cols = display.map(lab =>
-            '<div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex-1 min-w-[240px]">' +
-            '<h4 class="font-black text-sm text-slate-900">' + lab.name + '</h4>' +
-            '<p class="text-[10px] text-slate-400 mb-2">' + lab.especialidad + '</p>' +
-            '<div class="mt-2 space-y-1 text-xs">' +
-            '<div><strong>Precio:</strong> ' + lab.price + '</div>' +
-            '<div><strong>Plazo:</strong> ' + lab.time + '</div>' +
-            '<div><strong>Calificación:</strong> ⭐ ' + lab.rating + ' (' + lab.reviews + ' opiniones)</div>' +
-            '<div><strong>Zona:</strong> ' + lab.locationShort + '</div>' +
-            '</div>' +
-            '<button onclick="showToast(\'Orden asignada a ' + lab.name.replace(/'/g, "\\'") + '\', \'✓\')" class="mt-4 w-full bg-sky-600 text-white font-bold py-1.5 rounded-lg text-xs">Adjudicar orden</button>' +
-            '</div>'
-        ).join('');
-        document.getElementById('comparadorContent').innerHTML = '<div class="flex gap-4 flex-wrap">' + cols + '</div>';
-        document.getElementById('comparadorModal').classList.remove('hidden');
     }
 
     // ─── Upload Wizard ────────────────────────────────────────────────────────
